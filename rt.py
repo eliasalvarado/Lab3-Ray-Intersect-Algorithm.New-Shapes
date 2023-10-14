@@ -1,6 +1,6 @@
 from math import tan, pi, atan2, acos
 from materials import OPAQUE, REFLECTIVE, TRANSPARENT
-from npPirata import normVector, dot, vectorNegative, subtractVectors, reflectVector, addVectors, addVectorScalar, subtractVectorScalar, multVectorScalar, refractVector, totalInternalReflection, fresnel
+from npPirata import normVector, dot, vectorNegative, subtractVectors, reflectVector, addVectors, addVectorScalar, subtractVectorScalar, multVectorScalar, refractVector, totalInternalReflection, fresnel, vectorMagnitude
 
 maxRecursionDepth = 3
 
@@ -65,8 +65,8 @@ class Raytracer(object):
     def rtRayColor(self, intercept, rayDirection, recursion = 0):
         if intercept == None:
             if self.envMap:
-                x = (atan2(rayDirection[2], rayDirection[0]) / (2 * pi) + 0.5) * self.envMap.get_width()
-                y = acos(rayDirection[1]) / pi * self.envMap.get_height()
+                x = (atan2(rayDirection[2], rayDirection[0]) / (2 * pi) + 0.5) * self.envMap.get_width()# - 1
+                y = acos(rayDirection[1]) / pi * self.envMap.get_height()# - 1
 
                 envColor =  self.envMap.get_at((int(x), int(y)))
 
@@ -108,11 +108,12 @@ class Raytracer(object):
                         lightDir = vectorNegative(light.direction)
                     elif light.lightType == "Point":
                         lightDir = subtractVectors(light.point, intercept.point)
+                        lightDistance = vectorMagnitude(lightDir)
                         lightDir = normVector(lightDir)
 
                     shadowIntersect = self.rtCastRay(intercept.point, lightDir, intercept.obj)
                     
-                    if shadowIntersect == None:
+                    if shadowIntersect == None or (light.lightType == "Point" and shadowIntersect != None and shadowIntersect.distance > lightDistance):
                         diffuseLightColor = light.getDifusseColor(intercept)
                         diffuseColor[0] += diffuseLightColor[0]
                         diffuseColor[1] += diffuseLightColor[1]
@@ -134,11 +135,12 @@ class Raytracer(object):
                         lightDir = vectorNegative(light.direction)
                     elif light.lightType == "Point":
                         lightDir = subtractVectors(light.point, intercept.point)
+                        lightDistance = vectorMagnitude(lightDir)
                         lightDir = normVector(lightDir)
 
                     shadowIntersect = self.rtCastRay(intercept.point, lightDir, intercept.obj)
 
-                    if shadowIntersect == None:
+                    if shadowIntersect == None or (light.lightType == "Point" and shadowIntersect != None and shadowIntersect.distance > lightDistance):
                         specularLightColor = light.getSpecularColor(intercept, self.camPosition)
                         specularColor[0] += specularLightColor[0]
                         specularColor[1] += specularLightColor[1]
@@ -160,11 +162,12 @@ class Raytracer(object):
                         lightDir = vectorNegative(light.direction)
                     elif light.lightType == "Point":
                         lightDir = subtractVectors(light.point, intercept.point)
+                        lightDistance = vectorMagnitude(lightDir)
                         lightDir = normVector(lightDir)
 
                     shadowIntersect = self.rtCastRay(intercept.point, lightDir, intercept.obj)
 
-                    if shadowIntersect == None:
+                    if shadowIntersect == None or (light.lightType == "Point" and shadowIntersect != None and shadowIntersect.distance > lightDistance):
                         specularLightColor = light.getSpecularColor(intercept, self.camPosition)
                         specularColor[0] += specularLightColor[0]
                         specularColor[1] += specularLightColor[1]
@@ -195,7 +198,7 @@ class Raytracer(object):
                     px *= self.rightEdge
                     py *= self.topEdge
 
-                    direction = (px, py, -self.nearPlane)
+                    direction = (px, py, - self.nearPlane)
                     direction = normVector(direction)
 
                     intercept =  self.rtCastRay(self.camPosition, direction)

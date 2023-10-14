@@ -1,5 +1,5 @@
 from math import tan, pi, atan2, acos
-from npPirata import subtractVectors, vectorMagnitude, normVector, dot, multVectorScalar, multVectors, addVectors, addVectorScalar, subtractVectorScalar
+from npPirata import *
 
 
 class Intercept(object):
@@ -113,14 +113,14 @@ class AABB(Shape):
         bottomPlane = Plane(position=addVectors(position, [0, -size[1] / 2, 0]), normal=(0, -1, 0), material=material)
         topPlane = Plane(position=addVectors(position, [0, size[1] / 2, 0]), normal=(0, 1, 0), material=material)
 
-        frontPlane = Plane(position=addVectors(position, [0, 0, -size[2] / 2]), normal=(0, 0, -1), material=material)
+        forigntPlane = Plane(position=addVectors(position, [0, 0, -size[2] / 2]), normal=(0, 0, -1), material=material)
         backPlane = Plane(position=addVectors(position, [0, 0, size[2] / 2]), normal=(0, 0, 1), material=material)
 
         self.planes.append(leftPlane)
         self.planes.append(rightPlane)
         self.planes.append(bottomPlane)
         self.planes.append(topPlane)
-        self.planes.append(frontPlane)
+        self.planes.append(forigntPlane)
         self.planes.append(backPlane)
 
         self.boundsMin = [0, 0, 0]
@@ -166,6 +166,115 @@ class AABB(Shape):
         
         return Intercept(t, intercept.point, intercept.normal, (u, v), self)
 
+# Intento muy fallido de hacer una cápsula :')
+class Capsule(Shape):
+    def __init__(self, position, material, pA, pB, radius):
+        # pA y pB son los puntos de inicio y fin de la cápsula
+        self.pA = pA
+        self.pB = pB
+        # radius es el radio de las esferas, o también se puede ver como el radio del cilindro (cuerpo)
+        self.radius = radius
+        super().__init__(position=position, material=material)
 
+    def ray_intersect(self, orig, dir):
+        # ba = pb - pa
+        ba = subtractVectors(self.pB, self.pA)
+        # oa = orig - pa
+        oa = subtractVectors(orig, self.pA)
+
+        baba = dot(ba, ba)
+        badir = dot(ba, dir)
+        baoa = dot(ba,oa)
+        diroa = dot(dir,oa)
+        oaoa = dot(oa,oa)
+
+        a = baba - badir * badir
+        b = baba * diroa - baoa * badir
+        c = baba * oaoa - baoa * baoa - self.radius ** 2 * baba
+        h = b * b - a * c
+
+        if (h < 0):
+            return None
+        
+        t = (-b - h ** 0.5) / a
+        y = baoa + t * badir
+
+        # Es parte de una de las esferas de los extremos
+        oc = oa
+        if (y > 0):
+            oc = subtractVectors(orig, self.pB)
+        b = dot(dir,oc)
+        c = dot(oc,oc) - self.radius ** 2
+        h = b ** 2 - c
+        
+        if (h == 0):
+            return None
+        d = - b - h ** 0.5
+
+        # Es parte del cuerpo (el cilindro)
+        if (y > 0 and y < baba):
+            d = t
+
+        if type(d) is complex:
+            d = float(d.real)
+
+        pa = subtractVectors(addVectors(orig, multVectorScalar(dir,d)), self.pA)
+        temp = dot(pa,ba)
+        if type(temp) is complex:
+            temp = float(temp.real)
+        h = min(max(temp / baba, 0), 1)
+        # normal = (pa - h*ba)/r;
+        normal = divVectorScalar(subtractVectors(pa,multVectorScalar(ba,h)), self.radius)
+
+        point = addVectors(orig,multVectorScalar(dir,d))
+
+        return Intercept(d, point, normal, None, self)
+
+class Triangle(Shape):
+    def __init__(self, material, v0, v1, v2):
+        self.v0 = v0
+        self.v1 = v1
+        self.v2 = v2
+
+        position = [(v0[0] + v1[0] + v2[0]) / 3,
+                    (v0[1] + v1[1] + v2[1]) / 3,
+                    (v0[2] + v1[2] + v2[2]) / 3] 
+        super().__init__(position=position,material=material)
+
+    def ray_intersect(self, orig, dir):
+        edge0 = subtractVectors(self.v1, self.v0)
+        edge1 = subtractVectors(self.v2, self.v1)
+        edge2 = subtractVectors(self.v0, self.v2)
+        normal = cross(edge0, subtractVectors(self.v2,self.v0))
+        normal = normVector(normal)
+
+        denom = dot(normal, dir)
+        if (abs(denom) <= 0.0001):
+            return None
+
+        d = -1 * dot(normal, self.v0)
+        
+        num = - 1 * (dot(normal,orig) + d)
+        t = num / denom
+
+        if t < 0:
+            return None
+
+        p = addVectors(orig, multVectorScalar(dir,t))
+        
+        vp0 = subtractVectors(p, self.v0)
+        vp1 = subtractVectors(p, self.v1)
+        vp2 = subtractVectors(p, self.v2)
+        
+        c0 = cross(edge0, vp0)
+        c1 = cross(edge1, vp1)
+        c2 = cross(edge2, vp2)
+
+        if( (dot(normal,c0) < 0) or (dot(normal,c1) < 0) or (dot(normal,c2) < 0) ):
+            return None
+
+        uv = bcCoords(self.v0, self.v1, self.v2, p)
+
+        return Intercept(t, p, normal, uv, self)
 
 

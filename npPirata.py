@@ -1,5 +1,22 @@
 from math import isclose, sqrt, acos, asin
 
+def bcCoords(A, B, C, P):
+    BCP = abs((P[0] * C[1] + C[0] * B[1] + B[0] * P[1]) - (P[1] * C[0] + C[1] * B[0] + B[1] * P[0]))
+    CAP = abs((A[0] * C[1] + C[0] * P[1] + P[0] * A[1]) - (A[1] * C[0] + C[1] * P[0] + P[1] * A[0]))
+    
+    ABC = abs((A[0] * B[1] + B[0] * C[1] + C[0] * A[1]) - (A[1] * B[0] + B[1] * C[0] + C[1] * A[0]))
+
+    if ABC == 0:
+        return None
+
+    u = BCP / ABC
+    v = CAP / ABC
+
+    if (0 <= u <= 1) and (0 <= v <= 1):
+        return u, v
+    else:
+        return None
+
 def multMM(matrices):
     resultado = matrices[0]
 
@@ -109,12 +126,16 @@ def multVectorScalar(vector, scalar):
     result = [scalar * value for value in vector]
     return result
 
+def divVectorScalar(vector, scalar):
+    result = [value / scalar for value in vector]
+    return result
+
 def addVectorScalar(vector, scalar):
     result = [scalar + value for value in vector]
     return result
 
 def subtractVectorScalar(vector, scalar):
-    result = [scalar - value for value in vector]
+    result = [value - scalar for value in vector]
     return result
 
 def reflectVector(vector, normal):

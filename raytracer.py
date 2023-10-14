@@ -14,36 +14,20 @@ screen = pg.display.set_mode((width, height), pg.DOUBLEBUF | pg.HWACCEL | pg.HWS
 screen.set_alpha(None)
 
 raytracer = Raytracer(screen=screen)
+raytracer.envMap = pg.image.load("environmentMap.jpg")
 
-red = Material(diffuse=(0.94, 0, 0.2))
-black = Material(diffuse=(0, 0, 0))
-wall = Material(diffuse=(0.8, 0.8, 0.8))
-tex1 = pg.image.load("tex1.jpg")
-tex1 = Material(texture=tex1)
-tex2 = pg.image.load("tex2.jpg")
-tex2 = Material(texture=tex2)
+#Opaca
+orange = Material(diffuse=(0.9, 0.3, 0.08), specular=8, ks=0.01)
+#Reflectiva
 glass = Material(diffuse=(0.9, 0.9, 0.9), specular=64, ks=0.2, ior=1.5, matType=REFLECTIVE)
+#Transparente
+diamon = Material(diffuse=(0.9, 0.9, 0.9), specular=64, ks=0.2, ior=2.417, matType=TRANSPARENT)
 
-## -------------------- Cuarto -----------------------------
-#Techo
-raytracer.scene.append(Plane(position=(0,1.5,0), normal=(0,1,0), material=black))
-#Suelo
-raytracer.scene.append(Plane(position=(0,-1.5,0), normal=(0,1,0), material=black))
-#Fondo
-raytracer.scene.append(Plane(position=(0,0,-5), normal=(0,0,1), material=red))
-#Lados
-raytracer.scene.append(Plane(position=(-1.5,0,0), normal=(1,0,0), material=wall))
-raytracer.scene.append(Plane(position=(1.5,0,0), normal=(1,0,0), material=wall))
 
-## -------------------- Figuras -----------------------------
-#Cubos
-sizeDim = 0.5
-raytracer.scene.append(AABB(position=(0.5,-0.6,-2.7), size=(sizeDim,sizeDim,sizeDim), material=tex1))
-raytracer.scene.append(AABB(position=(-0.5,0.6,-2.7), size=(sizeDim,sizeDim,sizeDim), material=tex2))
+raytracer.scene.append(Triangle(material=orange, v0=(1,2,-5), v1=(3,2,-5), v2=(2,2,-8)))
+raytracer.scene.append(Triangle(material=glass, v0=(-1,0,-5), v1=(-3,0,-5), v2=(-2,4,-8)))
+raytracer.scene.append(Triangle(material=diamon, v0=(-1,-2,-5), v1=(1,-2,-5), v2=(2,1,-8)))
 
-#Discos
-raytracer.scene.append(Disk(position=(0.5,-1,-2.5), normal=(0,1,0), radius=0.5, material=glass))
-raytracer.scene.append(Disk(position=(-0.5,1,-2.5), normal=(0,1,0), radius=0.5, material=glass))
 
 
 #Lights
